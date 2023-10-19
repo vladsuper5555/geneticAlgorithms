@@ -3,7 +3,7 @@ from random import getrandbits
 import time
 
 MAX_DATA_GATHERINGS = 30 # the number of times we gather data
-T_MAX_HILL = 20 # the maximum number of iterations we will do for hill climbing
+T_MAX_HILL = 3000 # the maximum number of iterations we will do for hill climbing
 EPSILON = 0.00001
 
 # @jit(target_backend='cuda')   
