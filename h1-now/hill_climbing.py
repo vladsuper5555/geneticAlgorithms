@@ -6,6 +6,7 @@ MAX_DATA_GATHERINGS = 30 # the number of times we gather data
 T_MAX_HILL = 3000 # the maximum number of iterations we will do for hill climbing
 EPSILON = 0.00001
 
+# @jit(target_backend='cuda')   
 def decodeBitStringValue(bitString, rangeInterval, dimension):
     bitStringLength = int(len(bitString) / dimension)
     bitStrings = [bitString[i:i+bitStringLength] for i in range(0, len(bitString), bitStringLength)]
@@ -25,6 +26,17 @@ def decodeBitStringValue(bitString, rangeInterval, dimension):
     # now the values are in the range [range[0], range[1]]
     return values
 
+# @jit(target_backend='cuda')   
+def flip_bit(bitString, position):
+    new_bitString = bitString.copy()
+    new_bitString[position] = 1 if new_bitString[position] == 0 else 0
+    return new_bitString
+
+
+# @jit(target_backend='cuda')   
+def calculateNeighbours (bitString):
+    return [flip_bit(bitString, i) for i in range(len(bitString))]
+
 def chooseNextNeighbour (function, bitString, method, initialFunctionValue, rangeInterval, dimension):
     bestValue = function['function'](decodeBitStringValue(bitString, rangeInterval, dimension))
     bestNeighbour = bitString
@@ -35,23 +47,23 @@ def chooseNextNeighbour (function, bitString, method, initialFunctionValue, rang
             functionValue = function['function'](decodeBitStringValue(bitString, rangeInterval, dimension))
             if functionValue < bestValue:
                 bestValue = functionValue
-                bestNeighbour = bitString.copy()
+                bestNeighbour = bitString
         elif method == 'first':
             functionValue = function['function'](decodeBitStringValue(bitString, rangeInterval, dimension))
             if functionValue < bestValue:
                 bestValue = functionValue
-                bestNeighbour = bitString.copy()
+                bestNeighbour = bitString
                 break
         elif method == 'worst':
             functionValue = function['function'](decodeBitStringValue(bitString, rangeInterval, dimension))
             if firstTime and functionValue < initialFunctionValue:
                 bestValue = functionValue
-                bestNeighbour = bitString.copy()
+                bestNeighbour = bitString
                 firstTime = False
                 continue
             elif functionValue > bestValue and functionValue < initialFunctionValue:
                 bestValue = functionValue
-                bestNeighbour = bitString.copy()
+                bestNeighbour = bitString
 
         bitString[index] = 1 - bitString[index]
     return [bestNeighbour, bestValue]
@@ -64,8 +76,7 @@ def hill_climb_algorithm (function, dimension, method):
     start_time = time.time()
     for _ in range(T_MAX_HILL): # this is the number of times we select at random and try to improve
         # this is basically the first value of the bitstring and we will improve on this one
-        s = time.time()
-        bitString = [getrandbits(1) for _ in range(bitStringLength)]
+        bitString = [getrandbits(20) % 2 for _ in range(bitStringLength)]
         # calculated the pure value for the bitstring 
         local = False
         current_value = function['function'](decodeBitStringValue(bitString, function['range'], dimension))
@@ -79,9 +90,8 @@ def hill_climb_algorithm (function, dimension, method):
                 local = True
         if current_value < best_function_resposne:
             best_function_resposne = current_value
-        f = time.time()
-        totalTime = f - s
-        print(f'Done test {_ + 1} / {T_MAX_HILL} in time {totalTime} with best value {best_function_resposne}')
+        print(best_function_resposne)
+        # print(f'Done test {i + 1} / {T_MAX_HILL} in time {totalTime}')
 
     end_time = time.time()
     execution_time = end_time - start_time
