@@ -8,10 +8,11 @@
 #include <random>
 #include <unordered_map>
 #include <iomanip>
-
-const int MAX_DATA_GATHERINGS = 30;
-const int T_MAX_HILL = 40000;
+#include <fstream>
+const int MAX_DATA_GATHERINGS = 50;
+const int T_MAX_HILL = 2000;
 const double EPSILON = 0.00001;
+
 
 double power(double a, int exponent)
 {
@@ -122,6 +123,70 @@ std::vector<double> decodeBitset(bool *bits, const std::pair<double, double> &ra
     return values;
 }
 
+double chooseNextNeighbour(const Function &function, bool *currentBits, const int &method, double initialFunctionValue, const std::pair<double, double> &rangeInterval, int dimension, size_t bitStringLength)
+{
+    double bestValue = initialFunctionValue;
+    bool bestNeighbour[bitStringLength * dimension];
+    for (int i = 0; i < dimension * bitStringLength; ++i)
+        bestNeighbour[i] = currentBits[i];
+
+    std::vector<double> values = decodeBitset(currentBits, rangeInterval, bitStringLength, dimension);
+
+    double initialChange = rangeInterval.second - rangeInterval.first;
+    double changingValue = initialChange / 2;
+    int value_position = -1;
+    const int bitCount = bitStringLength * dimension;
+    for (size_t index = 0; index < bitCount; ++index)
+    {
+        if (index % bitStringLength == 0)
+        {
+            changingValue = initialChange / 2;
+            value_position++;
+        }
+        if (currentBits[index] == 1)
+            values[value_position] -= changingValue;
+        else
+            values[value_position] += changingValue;
+        currentBits[index] = !currentBits[index];
+        double functionValue = function.func(values);
+
+        if (method == 1 && functionValue < bestValue)
+        {
+            bestValue = functionValue;
+
+            for (int i = 0; i < dimension * bitStringLength; ++i)
+                bestNeighbour[i] = currentBits[i];
+        }
+        else if (method == 2 && functionValue < bestValue)
+        {
+            bestValue = functionValue;
+
+            for (int i = 0; i < dimension * bitStringLength; ++i)
+                bestNeighbour[i] = currentBits[i];
+            break;
+        }
+        else if (method == 3 && functionValue > bestValue && functionValue < initialFunctionValue)
+        {
+            bestValue = functionValue;
+
+            for (int i = 0; i < dimension * bitStringLength; ++i)
+                bestNeighbour[i] = currentBits[i];
+        }
+        if (currentBits[index] == 1)
+            values[value_position] -= changingValue;
+        else
+            values[value_position] += changingValue;
+        currentBits[index] = !currentBits[index];
+        changingValue /= 2;
+    }
+
+    for (int i = 0; i < dimension * bitStringLength; ++i)
+        currentBits[i] = bestNeighbour[i];
+    return bestValue;
+}
+
+
+
 std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorithm(const Function &function, int dimension, const int method)
 {
     std::mt19937_64 gen(static_cast<std::mt19937_64::result_type>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
@@ -140,43 +205,55 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
         double best_function_response = function.func(decodeBitset(currentBits, function.range, bitStringLength, dimension));
 
         double T = 100; // this is the temperature
+        double T_FUNCTION = 0.01;
+        
+        double MAX_ITERATIONS = 20;
 
         for (int i = 0; i < T_MAX_HILL; ++i)
         {
             bool local = false;
-            bool newBits[bitStringLength * dimension];
-            for (int i = 0; i < bitStringLength * dimension; ++i)
-                newBits[i] = currentBits[i];
-            int iterations = 0;
-            while (iterations < (int)(105 - T))
+            int not_improved_iterations = 0;
+            // std::cout << i << " " << MAX_ITERATIONS << '\n';
+            // std::cout << T << ' ' << i << '\n';
+            while (not_improved_iterations < (int)MAX_ITERATIONS)
             {
                 // choose a random bit and flip it
-                std::uniform_int_distribution<> bitDistrib(0, bitStringLength * dimension - 1);
-                int randomBit = bitDistrib(gen);
-                newBits[randomBit] = !newBits[randomBit];
+                
+                auto nextNeighbourValue = chooseNextNeighbour(function,
+                    currentBits,
+                    1, // best improvement
+                    function.func(decodeBitset(currentBits, function.range, bitStringLength, dimension)),
+                    function.range,
+                    dimension,
+                    bitStringLength
+                );
 
-                auto nextNeighbourValue = function.func(decodeBitset(newBits, function.range, bitStringLength, dimension));
                 std::uniform_real_distribution<double> dis(0.0, 1.0 - EPSILON);
                 double random_number = dis(gen);
-                // std::cout << random_number << " " << 1 / ((nextNeighbourValue - best_function_response) / T) << '\n';
                 if (nextNeighbourValue < best_function_response)
                 {
                     best_function_response = nextNeighbourValue;
-                    for (int i = 0; i < bitStringLength * dimension; ++i)
-                        currentBits[i] = newBits[i];
+                    not_improved_iterations = 0;
                     continue;
                 }
-                else if (random_number < std::pow(2.71828, -(abs(nextNeighbourValue - best_function_response) / T)))
+                else if (random_number < std::exp(-(abs(nextNeighbourValue - best_function_response) / T)))
                 {
                     // local = true;
-                    best_function_response = nextNeighbourValue;
-                    for (int i = 0; i < bitStringLength * dimension; ++i)
-                        currentBits[i] = newBits[i];
+                    // best_function_response = nextNeighbourValue;
+                    for (int l = 0, r = bitStringLength - 1, j = 1; j <= dimension; j++, l = r, r += bitStringLength)
+                    {
+                        std::uniform_int_distribution<> bitDistrib(l, r);
+                        int randomBit = bitDistrib(gen);    
+                        currentBits[randomBit] = !currentBits[randomBit];
+                    }
                 }
-                iterations++;
+                not_improved_iterations++;
             }
             // std::cout << "finished with local value " << best_function_response << '\n';
-            T *= 0.99;
+            // T = 1 / T_FUNCTION;
+            // T_FUNCTION = T_FUNCTION + 1.0 / 1000; 
+            // // MAX_ITERATIONS *= 2 - 1.000121;
+            T = T * 0.9925;
         }
         auto end_time = std::chrono::high_resolution_clock::now();
 
@@ -197,17 +274,21 @@ int main()
         functions.push_back({functionDefinitions[i], functionNames[i], ranges[i]});
     }
 
-    std::vector<int> dimensions = {30};
+    std::vector<int> dimensions = {5, 10, 30};
     int method = 1; // 1 is best 2 is first 3 is worst
+
+    std::string filename = "simulating_annealing_method.txt";
+    std::ofstream output_file(filename);
 
     for (const auto &function : functions)
     {
         for (const auto &dimension : dimensions)
         {
             auto res = hill_climb_algorithm(function, dimension, method);
-            // for (auto r : res)
-            //     std::cout << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
+            for (auto r : res)
+                output_file << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
         }
     }
+    output_file.close();
     return 0;
 }

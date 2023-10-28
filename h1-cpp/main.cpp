@@ -8,9 +8,10 @@
 #include <random> 
 #include <unordered_map>
 #include <iomanip>
+#include <fstream>
 
 const int MAX_DATA_GATHERINGS = 30;
-const int T_MAX_HILL = 10000;
+const int T_MAX_HILL = 300;
 const double EPSILON = 0.00001;
 
 double power(double a, int exponent)
@@ -25,7 +26,7 @@ double power(double a, int exponent)
     }
     return res;
 }
-
+// to be remade maybe the values are with exactly one unit under the real one
 double Michalewicz(std::vector<double> inputs)
 {
     double sum = 0;
@@ -82,22 +83,22 @@ typedef double (*FunctionPointer)(std::vector<double>);
 FunctionPointer functionDefinitions[] = {
     Schewefel,
     Michalewicz,
-    // Rastrigin,
-    // De_Jong
+    Rastrigin,
+    De_Jong
 };
 
 std::pair<double, double> ranges[] = {
     {-500.0, 500.0},
-    // {0.0, M_PI},
-    // {-5.12, 5.12},
-    // {-5.12, 5.12}
+    {0.0, M_PI},
+    {-5.12, 5.12},
+    {-5.12, 5.12}
     };
 
 std::string functionNames[] = {
     "Schewefel",
-    // "Michalewicz",
-    // "Rastrigin",
-    // "De_Jong"
+    "Michalewicz",
+    "Rastrigin",
+    "De_Jong"
     };
 
 struct Function
@@ -228,13 +229,15 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
         auto end_time = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
-        std::cout << "Iteration " << test + 1 << ": Time taken = " << time_span.count() << " seconds. New best value = " << best_function_response << '\n';
+        // std::cout << "Iteration " << test + 1 << ": Time taken = " << time_span.count() << " seconds. New best value = " << best_function_response << '\n';
         results.push_back({best_function_response, time_span});
     }
     return results;
 }
 
-int main()
+
+
+int main(int argc, char* argv[])
 {
     std::srand(std::time(0));
 
@@ -244,17 +247,28 @@ int main()
         functions.push_back({functionDefinitions[i], functionNames[i], ranges[i]});
     }
 
-    std::vector<int> dimensions = {30};
-    int method = 1; // 1 is best 2 is first 3 is worst
+    std::vector<int> dimensions = {5, 10, 30};
+    int method = 1; // default value
+    // 1 is best
+    // 2 is first
+    // 3 is worst
+    if (argc > 1) {
+        method = std::stoi(argv[1]);
+    }
+
+    std::string filename = "hill_climbing_method" + std::to_string(method) + ".txt";
+    std::ofstream output_file(filename);
 
     for (const auto &function : functions)
     {
         for (const auto &dimension : dimensions)
         {
             auto res = hill_climb_algorithm(function, dimension, method);
-            // for (auto r : res)
-            //     std::cout << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
+            for (auto r : res)
+                output_file << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
         }
     }
+
+    output_file.close();
     return 0;
 }
