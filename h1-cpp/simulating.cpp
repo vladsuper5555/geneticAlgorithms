@@ -9,10 +9,9 @@
 #include <unordered_map>
 #include <iomanip>
 #include <fstream>
-const int MAX_DATA_GATHERINGS = 50;
-const int T_MAX_HILL = 2000;
+const int MAX_DATA_GATHERINGS = 30;
+const int T_MAX_HILL = 2500;
 const double EPSILON = 0.00001;
-
 
 double power(double a, int exponent)
 {
@@ -34,7 +33,7 @@ double Michalewicz(std::vector<double> inputs)
     for (size_t index = 0; index < inputs.size(); index++)
     {
         double value = inputs[index];
-        sum += std::sin(value) * power(std::sin((index * value * value) / M_PI), 2 * m);
+        sum += std::sin(value) * std::pow(std::sin(((index + 1)* value * value) / M_PI), 2 * m);
     }
     return -sum;
 }
@@ -88,7 +87,7 @@ FunctionPointer functionDefinitions[] = {
 
 std::pair<double, double> ranges[] = {
     {-500.0, 500.0},
-    {0.0, M_PI},
+    {0, M_PI},
     {-5.12, 5.12},
     {-5.12, 5.12}};
 
@@ -185,8 +184,6 @@ double chooseNextNeighbour(const Function &function, bool *currentBits, const in
     return bestValue;
 }
 
-
-
 std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorithm(const Function &function, int dimension, const int method)
 {
     std::mt19937_64 gen(static_cast<std::mt19937_64::result_type>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
@@ -206,8 +203,8 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
 
         double T = 100; // this is the temperature
         double T_FUNCTION = 0.01;
-        
-        double MAX_ITERATIONS = 20;
+
+        double MAX_ITERATIONS = 25;
 
         for (int i = 0; i < T_MAX_HILL; ++i)
         {
@@ -215,10 +212,13 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
             int not_improved_iterations = 0;
             // std::cout << i << " " << MAX_ITERATIONS << '\n';
             // std::cout << T << ' ' << i << '\n';
+            // bool newBits[dimension * bitStringLength];
+            // for (int i = 0; i < bitStringLength * dimension; i++)
+            //     newBits[i] = currentBits[i];
             while (not_improved_iterations < (int)MAX_ITERATIONS)
             {
                 // choose a random bit and flip it
-                
+
                 auto nextNeighbourValue = chooseNextNeighbour(function,
                     currentBits,
                     1, // best improvement
@@ -228,6 +228,14 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
                     bitStringLength
                 );
 
+                // for (int l = 0, r = bitStringLength - 1, j = 1; j <= dimension; j++, l = r, r += bitStringLength)
+                // {
+                //     std::uniform_int_distribution<> bitDistrib(l, r);
+                //     int randomBit = bitDistrib(gen);
+                //     newBits[randomBit] = !newBits[randomBit];
+                // }
+
+                // auto nextNeighbourValue = function.func(decodeBitset(newBits, function.range, bitStringLength, dimension));
                 std::uniform_real_distribution<double> dis(0.0, 1.0 - EPSILON);
                 double random_number = dis(gen);
                 if (nextNeighbourValue < best_function_response)
@@ -243,17 +251,19 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
                     for (int l = 0, r = bitStringLength - 1, j = 1; j <= dimension; j++, l = r, r += bitStringLength)
                     {
                         std::uniform_int_distribution<> bitDistrib(l, r);
-                        int randomBit = bitDistrib(gen);    
+                        int randomBit = bitDistrib(gen);
                         currentBits[randomBit] = !currentBits[randomBit];
                     }
+                    // for (int i = 0; i < bitStringLength * dimension; ++i)
+                    //     currentBits[i] = newBits[i];
                 }
                 not_improved_iterations++;
             }
             // std::cout << "finished with local value " << best_function_response << '\n';
             // T = 1 / T_FUNCTION;
-            // T_FUNCTION = T_FUNCTION + 1.0 / 1000; 
+            // T_FUNCTION = T_FUNCTION + 1.0 / 1000;
             // // MAX_ITERATIONS *= 2 - 1.000121;
-            T = T * 0.9925;
+            T = T * 0.995;
         }
         auto end_time = std::chrono::high_resolution_clock::now();
 
@@ -266,6 +276,8 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
 
 int main()
 {
+    std::vector<double> values;
+   
     std::srand(std::time(0));
 
     std::vector<Function> functions;
@@ -274,7 +286,7 @@ int main()
         functions.push_back({functionDefinitions[i], functionNames[i], ranges[i]});
     }
 
-    std::vector<int> dimensions = {5, 10, 30};
+    std::vector<int> dimensions = {30};
     int method = 1; // 1 is best 2 is first 3 is worst
 
     std::string filename = "simulating_annealing_method.txt";
@@ -286,7 +298,7 @@ int main()
         {
             auto res = hill_climb_algorithm(function, dimension, method);
             for (auto r : res)
-                output_file << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
+                output_file << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed << std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
         }
     }
     output_file.close();
