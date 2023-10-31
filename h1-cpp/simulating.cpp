@@ -10,7 +10,7 @@
 #include <iomanip>
 #include <fstream>
 const int MAX_DATA_GATHERINGS = 50;
-const int T_MAX_HILL = 2000;
+const int T_MAX_HILL = 10000;
 const double EPSILON = 0.00001;
 
 
@@ -34,7 +34,7 @@ double Michalewicz(std::vector<double> inputs)
     for (size_t index = 0; index < inputs.size(); index++)
     {
         double value = inputs[index];
-        sum += std::sin(value) * power(std::sin((index * value * value) / M_PI), 2 * m);
+        sum += std::sin(value) * power(std::sin(((index + 1) * value * value) / M_PI), 2 * m);
     }
     return -sum;
 }
@@ -81,19 +81,19 @@ double De_Jong(std::vector<double> inputs)
 typedef double (*FunctionPointer)(std::vector<double>);
 
 FunctionPointer functionDefinitions[] = {
-    Schewefel,
+    // Schewefel,
     Michalewicz,
     Rastrigin,
     De_Jong};
 
 std::pair<double, double> ranges[] = {
-    {-500.0, 500.0},
+    // {-500.0, 500.0},
     {0.0, M_PI},
     {-5.12, 5.12},
     {-5.12, 5.12}};
 
 std::string functionNames[] = {
-    "Schewefel",
+    // "Schewefel",
     "Michalewicz",
     "Rastrigin",
     "De_Jong"};
@@ -207,7 +207,7 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
         double T = 100; // this is the temperature
         double T_FUNCTION = 0.01;
         
-        double MAX_ITERATIONS = 20;
+        double MAX_ITERATIONS = 400;
 
         for (int i = 0; i < T_MAX_HILL; ++i)
         {
@@ -253,7 +253,7 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
             // T = 1 / T_FUNCTION;
             // T_FUNCTION = T_FUNCTION + 1.0 / 1000; 
             // // MAX_ITERATIONS *= 2 - 1.000121;
-            T = T * 0.9925;
+            T = T * 0.999;
         }
         auto end_time = std::chrono::high_resolution_clock::now();
 
@@ -274,7 +274,7 @@ int main()
         functions.push_back({functionDefinitions[i], functionNames[i], ranges[i]});
     }
 
-    std::vector<int> dimensions = {5, 10, 30};
+    std::vector<int> dimensions = {2, 5, 10, 30};
     int method = 1; // 1 is best 2 is first 3 is worst
 
     std::string filename = "simulating_annealing_method.txt";
