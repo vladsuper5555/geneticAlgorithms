@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <iomanip>
 #include <fstream>
-const int MAX_DATA_GATHERINGS = 30;
+const int MAX_DATA_GATHERINGS = 40;
 const int T_MAX_HILL = 2500;
 const double EPSILON = 0.00001;
 
@@ -286,7 +286,7 @@ int main()
         functions.push_back({functionDefinitions[i], functionNames[i], ranges[i]});
     }
 
-    std::vector<int> dimensions = {30};
+    std::vector<int> dimensions = {5, 10, 30};
     int method = 1; // 1 is best 2 is first 3 is worst
 
     std::string filename = "simulating_annealing_method.txt";
