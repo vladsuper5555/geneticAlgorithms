@@ -80,7 +80,7 @@ double De_Jong(std::vector<double> inputs)
 typedef double (*FunctionPointer)(std::vector<double>);
 
 FunctionPointer functionDefinitions[] = {
-    // Schewefel,
+    Schewefel,
     Michalewicz,
     Rastrigin,
     De_Jong};
@@ -92,7 +92,7 @@ std::pair<double, double> ranges[] = {
     {-5.12, 5.12}};
 
 std::string functionNames[] = {
-    // "Schewefel",
+    "Schewefel",
     "Michalewicz",
     "Rastrigin",
     "De_Jong"};
@@ -263,7 +263,7 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
             // T = 1 / T_FUNCTION;
             // T_FUNCTION = T_FUNCTION + 1.0 / 1000;
             // // MAX_ITERATIONS *= 2 - 1.000121;
-            T = T * 0.999;
+            T = T * 0.995;
         }
         auto end_time = std::chrono::high_resolution_clock::now();
 
