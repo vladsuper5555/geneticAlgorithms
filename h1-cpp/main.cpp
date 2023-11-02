@@ -11,7 +11,7 @@
 #include <fstream>
 #include <limits.h>
 #define DBL_MIN -(1e10)
-const int MAX_DATA_GATHERINGS = 30;
+const int MAX_DATA_GATHERINGS = 40;
 const int T_MAX_HILL = 1000;
 const double EPSILON = 0.00001;
 // pass as reference in the arguments in the functions
