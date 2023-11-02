@@ -12,9 +12,9 @@
 #include <limits.h>
 #define DBL_MIN -(1e10)
 const int MAX_DATA_GATHERINGS = 30;
-const int T_MAX_HILL = 30;
+const int T_MAX_HILL = 1000;
 const double EPSILON = 0.00001;
-
+// pass as reference in the arguments in the functions
 double power(double a, int exponent)
 {
     double res = 1.0;
@@ -236,7 +236,7 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
         auto end_time = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
-        std::cout << "Iteration " << test + 1 << ": Time taken = " << time_span.count() << " seconds. New best value = " << best_function_response << '\n';
+        // std::cout << "Iteration " << test + 1 << ": Time taken = " << time_span.count() << " seconds. New best value = " << best_function_response << '\n';
         results.push_back({best_function_response, time_span});
     }
     return results;
@@ -272,7 +272,7 @@ int main(int argc, char* argv[])
         {
             auto res = hill_climb_algorithm(function, dimension, method);
             for (auto r : res)
-                output_file << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
+                std::cout << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed <<std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
         }
     }
 
