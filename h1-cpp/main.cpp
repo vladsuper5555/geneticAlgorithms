@@ -9,9 +9,10 @@
 #include <unordered_map>
 #include <iomanip>
 #include <fstream>
-
+#include <limits.h>
+#define DBL_MIN -(1e10)
 const int MAX_DATA_GATHERINGS = 30;
-const int T_MAX_HILL = 300;
+const int T_MAX_HILL = 30;
 const double EPSILON = 0.00001;
 
 double power(double a, int exponent)
@@ -34,7 +35,7 @@ double Michalewicz(std::vector<double> inputs)
     for (size_t index = 0; index < inputs.size(); index++)
     {
         double value = inputs[index];
-        sum += std::sin(value) * power(std::sin((index * value * value) / M_PI), 2 * m);
+        sum += std::sin(value) * power(std::sin(((index + 1) * value * value) / M_PI), 2 * m);
     }
     return -sum;
 }
@@ -128,7 +129,11 @@ std::vector<double> decodeBitset(bool *bits, const std::pair<double, double> &ra
 
 double chooseNextNeighbour(const Function &function, bool *currentBits, const int &method, double initialFunctionValue, const std::pair<double, double> &rangeInterval, int dimension, size_t bitStringLength)
 {
-    double bestValue = initialFunctionValue;
+    double bestValue;
+    if (method == 3)
+        bestValue = DBL_MIN;
+    else
+        bestValue = initialFunctionValue;
     bool bestNeighbour[bitStringLength * dimension];
     for (int i = 0; i < dimension * bitStringLength; ++i)
         bestNeighbour[i] = currentBits[i];
@@ -182,6 +187,8 @@ double chooseNextNeighbour(const Function &function, bool *currentBits, const in
         currentBits[index] = !currentBits[index];
         changingValue /= 2;
     }
+    if (bestValue == DBL_MIN)
+        return initialFunctionValue;
 
     for (int i = 0; i < dimension * bitStringLength; ++i)
         currentBits[i] = bestNeighbour[i];
@@ -229,7 +236,7 @@ std::vector<std::pair<double, std::chrono::duration<double>>> hill_climb_algorit
         auto end_time = std::chrono::high_resolution_clock::now();
 
         std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time);
-        // std::cout << "Iteration " << test + 1 << ": Time taken = " << time_span.count() << " seconds. New best value = " << best_function_response << '\n';
+        std::cout << "Iteration " << test + 1 << ": Time taken = " << time_span.count() << " seconds. New best value = " << best_function_response << '\n';
         results.push_back({best_function_response, time_span});
     }
     return results;
