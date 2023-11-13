@@ -14,6 +14,7 @@
 #include <thread>
 #include <mutex>
 
+#define M_PI 3.1415926
 #define DBL_MIN -(1e10)
 const int MAX_DATA_GATHERINGS = 10;
 const int GEN_MAX_NO = 1000;
@@ -301,6 +302,7 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
 
     std::vector<std::pair<double, std::chrono::duration<double>>> results;
     std::mutex results_mutex; // Mutex to control access to the results vector
+    int num_threads = std::thread::hardware_concurrency();
 
     auto worker = [&](int start, int end)
     {
@@ -409,15 +411,15 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
     };
 
     std::vector<std::thread> threads;
-    int tests_per_thread = std::max(1, MAX_DATA_GATHERINGS / 3);
+    int tests_per_thread = std::max(1, MAX_DATA_GATHERINGS / num_threads);
 
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < num_threads; ++i)
     {
         int start = i * tests_per_thread;
         int end = (i + 1) * tests_per_thread;
 
         // For the last thread, ensure it processes all remaining tests
-        if (i == 2)
+        if (i == num_threads - 1)
             end = MAX_DATA_GATHERINGS;
 
         threads.emplace_back(worker, start, end);
