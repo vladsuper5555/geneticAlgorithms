@@ -14,10 +14,9 @@
 #include <thread>
 #include <mutex>
 
-#define M_PI 3.1415926
 #define DBL_MIN -(1e10)
-const int MAX_DATA_GATHERINGS = 10;
-const int GEN_MAX_NO = 1000;
+const int MAX_DATA_GATHERINGS = 3;
+const int GEN_MAX_NO = 1500;
 const double EPSILON = 0.00001;
 const int POPULATION_SIZE = 100;
 const double BIG_C_CONSTANT = 30000.0;
@@ -93,23 +92,23 @@ typedef double (*FunctionPointer)(std::vector<double>);
 
 FunctionPointer functionDefinitions[] = {
     Schewefel,
-    // Michalewicz,
-    // Rastrigin,
-    // De_Jong
+    Michalewicz,
+    Rastrigin,
+    De_Jong
 };
 
 std::pair<double, double> ranges[] = {
     {-500.0, 500.0},
-    // {0.0, M_PI},
-    // {-5.12, 5.12},
-    // {-5.12, 5.12}
+    {0.0, M_PI},
+    {-5.12, 5.12},
+    {-5.12, 5.12}
 };
 
 std::string functionNames[] = {
     "Schewefel",
-    // "Michalewicz",
-    // "Rastrigin",
-    // "De_Jong"
+    "Michalewicz",
+    "Rastrigin",
+    "De_Jong"
 };
 
 struct Function
@@ -296,23 +295,24 @@ double hill_climb_algorithm(const Function &function, int dimension, const int b
     return best_function_response;
 }
 
-std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Function &function, int dimension)
+std::pair<std::vector<double>, std::chrono::duration<double>> genetic(const Function &function, int dimension)
 {
     size_t bitStringLength = std::ceil(std::log2((function.range.second - function.range.first) / EPSILON));
 
-    std::vector<std::pair<double, std::chrono::duration<double>>> results;
+    std::vector<double> results;
     std::mutex results_mutex; // Mutex to control access to the results vector
     int num_threads = std::thread::hardware_concurrency();
 
     auto worker = [&](int start, int end)
     {
+        // std::cout << "workier from " << start << " to " << end << '\n';
         std::mt19937_64 gen(static_cast<std::mt19937_64::result_type>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
         gen.seed(gen());
         for (int test = start; test < end; ++test)
         {
             gen.seed(gen());
-            auto start_time = std::chrono::high_resolution_clock::now();
             double best_function_response = std::numeric_limits<double>::infinity();
+
             std::vector<std::vector<bool>> population(POPULATION_SIZE);
             std::uniform_int_distribution<> distrib(0, 1);
             for (int i = 0; i < POPULATION_SIZE; ++i)
@@ -321,7 +321,6 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
 
             for (int i = 0; i < GEN_MAX_NO; ++i)
             {
-
                 std::vector<individ> fitnesses(POPULATION_SIZE);
                 calculateFitnessForIndivids(fitnesses, population, function, bitStringLength, dimension, best_function_response);
                 // since now we have the results from the previous generation lets calculate the best
@@ -334,8 +333,8 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
                 }
                 std::vector<std::vector<bool>> newPopulation;
 
-                int generatedPopCount = POPULATION_SIZE * 0.20;
-                int elitismCount = POPULATION_SIZE * 0.20;
+                int generatedPopCount = POPULATION_SIZE * 0.15;
+                int elitismCount = POPULATION_SIZE * 0.15;
                 for (int ii = 0; ii < elitismCount; ++ii)
                 {
                     std::vector<bool> v;
@@ -344,21 +343,21 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
                     newPopulation.push_back(v);
                 }
 
-                while (generatedPopCount < POPULATION_SIZE * 0.3)
+                // while (generatedPopCount < POPULATION_SIZE * 0.3)
+                // {
+                //     int indv1 = rouletteWheelSelection(fitnesses);
+
+                //     std::vector<bool> child(bitStringLength * dimension);
+                //     for (int jj = 0; jj < bitStringLength * dimension; ++jj)
+                //         child[jj] = population[indv1][jj];
+
+                //     newPopulation.push_back(child);
+                //     generatedPopCount++;
+                // }
+
+                while (generatedPopCount < POPULATION_SIZE * 0.4) // 0.5 very good 0.4 seems even better
                 {
-                    int indv1 = rouletteWheelSelection(fitnesses);
-
-                    std::vector<bool> child(bitStringLength * dimension);
-                    for (int jj = 0; jj < bitStringLength * dimension; ++jj)
-                        child[jj] = population[indv1][jj];
-
-                    newPopulation.push_back(child);
-                    generatedPopCount++;
-                }
-
-                while (generatedPopCount < POPULATION_SIZE * 0.6)
-                {
-                    int indv1 = tournamentSelection(fitnesses, 5); // Example tournament size of 5
+                    int indv1 = tournamentSelection(fitnesses, 10); // Example tournament size of 5
 
                     std::vector<bool> child(bitStringLength * dimension);
                     for (int jj = 0; jj < bitStringLength * dimension; ++jj)
@@ -399,19 +398,19 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
                     }
                 population = std::move(newPopulation);
             }
-            auto end_time = std::chrono::high_resolution_clock::now();
-
-            std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start_time);
-
+            for (int ii = 0; ii < POPULATION_SIZE; ++ii)
+                best_function_response = std::min(best_function_response, hill_climb_algorithm(function, dimension, bitStringLength, population[ii]));
             {
                 std::lock_guard<std::mutex> lock(results_mutex); // Lock the mutex while modifying shared resources
-                results.push_back({best_function_response, time_span});
+                results.push_back(best_function_response);
             }
         }
     };
 
     std::vector<std::thread> threads;
     int tests_per_thread = std::max(1, MAX_DATA_GATHERINGS / num_threads);
+    auto start_time = std::chrono::high_resolution_clock::now();
+
 
     for (int i = 0; i < num_threads; ++i)
     {
@@ -430,7 +429,11 @@ std::vector<std::pair<double, std::chrono::duration<double>>> genetic(const Func
         thread.join();
     }
 
-    return results;
+    auto end_time = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> time_span = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::high_resolution_clock::now() - start_time);
+
+    return {results, time_span};
 }
 
 int main(int argc, char *argv[])
@@ -455,9 +458,13 @@ int main(int argc, char *argv[])
             auto res = genetic(function, dimension);
             double sum = 0;
             double sum_time = 0;
-            for (auto r : res)
-                sum_time += r.second.count(), sum += r.first;
-            std::cout << sum / 10 << ' ' << sum_time / 3 << '\n';
+            double best = 100000;
+            std::cout << "funtcion name " << function.name << '\n';
+            std::cout << "dimension " << dimension << '\n';
+            //  std::cout << r << '\n',
+            for (auto r : res.first)
+                sum += r, best = std::min(best, r);
+            std::cout << sum / res.first.size() << ' ' << best << ' ' << res.second.count() << '\n';
             // std::cout << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed << std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
         }
     }
@@ -465,3 +472,11 @@ int main(int argc, char *argv[])
     output_file.close();
     return 0;
 }
+// while crossover rate goes down the mutation probability should go up because at some point in futre time we will have very close individuals
+// this means that crcossover is not really helpful but the other is 
+// mutation reate should be inscresing or decresing
+// trigger hypermutation cobb
+// diversity of solutions decresing is bad
+// should check the last time we improved the algothim
+
+// if the generation stats being the same we can generate some random new population members (aroudn the change of changin a bit is 40%)w
