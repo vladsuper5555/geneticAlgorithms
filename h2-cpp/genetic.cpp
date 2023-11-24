@@ -15,10 +15,10 @@
 #include <mutex>
 
 #define DBL_MIN -(1e10)
-const int MAX_DATA_GATHERINGS = 3;
-const int GEN_MAX_NO = 1500;
+const int MAX_DATA_GATHERINGS = 50;
+const int GEN_MAX_NO = 2000;
 const double EPSILON = 0.00001;
-const int POPULATION_SIZE = 100;
+const int POPULATION_SIZE = 200;
 const double BIG_C_CONSTANT = 30000.0;
 
 struct individ
@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
         functions.push_back({functionDefinitions[i], functionNames[i], ranges[i]});
     }
 
-    std::vector<int> dimensions = {30};
+    std::vector<int> dimensions = {5, 10, 30};
 
     std::string filename = "genetic.txt";
     std::ofstream output_file(filename);
@@ -459,13 +459,17 @@ int main(int argc, char *argv[])
             double sum = 0;
             double sum_time = 0;
             double best = 100000;
-            std::cout << "funtcion name " << function.name << '\n';
-            std::cout << "dimension " << dimension << '\n';
             //  std::cout << r << '\n',
+            double variance = 0;
             for (auto r : res.first)
                 sum += r, best = std::min(best, r);
-            std::cout << sum / res.first.size() << ' ' << best << ' ' << res.second.count() << '\n';
-            // std::cout << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed << std::setprecision(5) << r.first << ", Time: " << r.second.count() << std::endl;
+            const double median = sum / res.first.size();
+            for (auto r : res.first)
+                variance += std::pow(median - r, 2);
+            variance = variance / res.first.size();
+            const double std_dev = std::sqrt(variance);
+            // std::cout << sum / res.first.size() << ' ' << best << ' ' << res.second.count() << '\n';
+            std::cout << "Function: " << function.name << ", Dimension: " << dimension << ", Min Value: " << std::fixed << std::setprecision(5) << best << ", Median " << median << ", Std. dev. " << std_dev << ", Time: " << res.second.count() << std::endl;
         }
     }
 
