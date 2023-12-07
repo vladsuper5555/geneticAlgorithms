@@ -92,22 +92,22 @@ typedef double (*FunctionPointer)(std::vector<double>);
 
 FunctionPointer functionDefinitions[] = {
     // Schewefel,
-    Michalewicz,
-    // Rastrigin,
+    // Michalewicz,
+    Rastrigin,
     // De_Jong
 };
 
 std::pair<double, double> ranges[] = {
     // {-500.0, 500.0},
-    {0.0, M_PI},
-    // {-5.12, 5.12},
+    // {0.0, M_PI},
+    {-5.12, 5.12},
     // {-5.12, 5.12}
 };
 
 std::string functionNames[] = {
     // "Schewefel",
-    "Michalewicz",
-    // "Rastrigin",
+    // "Michalewicz",
+    "Rastrigin",
     // "De_Jong"
 };
 
