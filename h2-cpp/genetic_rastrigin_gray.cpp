@@ -15,8 +15,8 @@
 #include <mutex>
 
 #define DBL_MIN -(1e10)
-const int MAX_DATA_GATHERINGS = 30;
-const int GEN_MAX_NO = 3000;
+const int MAX_DATA_GATHERINGS = 50;
+const int GEN_MAX_NO = 2000;
 const double EPSILON = 0.00001;
 const int POPULATION_SIZE = 200;
 const double BIG_C_CONSTANT = 30000.0;

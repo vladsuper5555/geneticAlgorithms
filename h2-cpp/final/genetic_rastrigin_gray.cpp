@@ -92,22 +92,22 @@ typedef double (*FunctionPointer)(std::vector<double>);
 
 FunctionPointer functionDefinitions[] = {
     // Schewefel,
-    // Michalewicz,
-    Rastrigin,
+    Michalewicz,
+    // Rastrigin,
     // De_Jong
 };
 
 std::pair<double, double> ranges[] = {
     // {-500.0, 500.0},
-    // {0.0, M_PI},
-    {-5.12, 5.12},
+    {0.0, M_PI},
+    // {-5.12, 5.12},
     // {-5.12, 5.12}
 };
 
 std::string functionNames[] = {
     // "Schewefel",
-    // "Michalewicz",
-    "Rastrigin",
+    "Michalewicz",
+    // "Rastrigin",
     // "De_Jong"
 };
 
@@ -118,18 +118,34 @@ struct Function
     std::pair<double, double> range;
 };
 
-std::vector<double> decodeBitset(std::vector<bool> &bits, const std::pair<double, double> &rangeInterval, size_t bitStringLength, int dimension)
-{
+std::vector<bool> grayToBinary(const std::vector<bool> &gray, size_t bitStringLength) {
+    std::vector<bool> binary(bitStringLength, false);
+    binary[0] = gray[0]; // The first bit is the same
+
+    // Compute the rest of the bits
+    for (size_t i = 1; i < bitStringLength; ++i) {
+        // If current Gray code bit is 0, then copy previous binary bit, else invert it
+        binary[i] = gray[i] != binary[i - 1];
+    }
+
+    return binary;
+}
+
+std::vector<double> decodeBitset(std::vector<bool> &grayBits, const std::pair<double, double> &rangeInterval, size_t bitStringLength, int dimension) {
     double rangeValue = rangeInterval.second - rangeInterval.first;
 
     std::vector<double> values;
     const int bitCount = dimension * bitStringLength;
-    for (size_t i = 0; i < bitCount; i += bitStringLength)
-    {
+    for (size_t i = 0; i < bitCount; i += bitStringLength) {
+        // Convert Gray code segment to binary
+        std::vector<bool> binarySegment(grayBits.begin() + i, grayBits.begin() + i + bitStringLength);
+        std::vector<bool> binary = grayToBinary(binarySegment, bitStringLength);
+
         double value = 0;
         double range_copy = rangeValue / 2;
-        for (int bit = i; bit < i + bitStringLength; ++bit, range_copy /= 2)
-            value += range_copy * bits[bit];
+        for (int bit = 0; bit < bitStringLength; ++bit, range_copy /= 2) {
+            value += range_copy * binary[bit];
+        }
         double value_in_range = value + rangeInterval.first;
         values.push_back(value_in_range);
     }
