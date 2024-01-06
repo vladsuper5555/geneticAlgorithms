@@ -9,7 +9,7 @@
 #include <queue>
 #include <chrono>
 
-#define POPULATION_SIZE 100
+#define POPULATION_SIZE 50
 #define SAMPLE_SIZE 3
 #define MUTATION_PERCENT 25
 
@@ -33,6 +33,13 @@ void read(string name)
     fstream f;
     f.open(name, ios::in);
     int a, b;
+    if (n)
+    {
+        // cleanup
+        for (int i = 0; i < n; ++i)
+            delete [] adj[i];
+        delete [] adj;
+    }
     f >> n;
     adj = new int *[n];
     for (int i = 0; i < n; i++)
@@ -338,11 +345,10 @@ int geneticAlg(vector<pair<vector<int> *, int> *> *sample)
                 best = colors;
             population = devaluate(population, best - 1);
             colors--;
-            cout << "decresing the colors \n";
+            // cout << "decresing the colors \n";
             // colors = colorCount(population);
         }
     }
-    cout << "colors: " << best << endl;
     return best;
 }
 
@@ -397,7 +403,7 @@ vector<pair<vector<int> *, int> *> *generateSample()
     for (int i = 0; i < SAMPLE_SIZE; i++)
     {
         auto *sample = greedy_matrix_arbitrary_vertex(i);
-        cout << "Sample: " << i << endl;
+        // cout << "Sample: " << i << endl;
         auto *samplePair = new pair<vector<int> *, int>;
         *samplePair = make_pair(sample, fittest(sample));
         samplePopulation->push_back(samplePair);
@@ -408,18 +414,21 @@ vector<pair<vector<int> *, int> *> *generateSample()
 int main()
 {
     srand(time(NULL));
-    string f_name = "test_5";
-    read(f_name);
-
-    auto *samplePopulation = generateSample();
-    int max_color = 0;
-    for (int i = 0; i < n; i++)
+    int j = 6;
+    for (string i = "6";  j <= 10; ++j, i[0]++)
     {
-        cout << samplePopulation->at(0)->first->at(i) << "\t";
-        max_color = max(max_color, samplePopulation->at(0)->first->at(i) + 1);
+        string f_name = "./tests/test_" + i;
+        read(f_name);
+        auto *samplePopulation = generateSample();
+        int max_color = 0;
+        for (int i = 0; i < n; i++)
+        {
+            // cout << samplePopulation->at(0)->first->at(i) << "\t";
+            max_color = max(max_color, samplePopulation->at(0)->first->at(i) + 1);
+        }
+        // cout << endl
+        //     << "Penalty: " << samplePopulation->at(0)->second << endl;
+        // cout << "Max Degree " << maxDegree() << endl;
+        cout << "Final result: " << geneticAlg(samplePopulation) << endl;
     }
-    cout << endl
-         << "Penalty: " << samplePopulation->at(0)->second << endl;
-    cout << "Max Degree " << maxDegree() << endl;
-    cout << "Final result: " << geneticAlg(samplePopulation);
 }
