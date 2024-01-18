@@ -14,8 +14,8 @@
 using namespace std;
 double INITIAL_TEMPERATURE = 100.0;
 
-int n;     // number of vertices in graph
-int **adj; // matrix representing graph
+int n;  
+int **adj; 
 
 void read(string name)
 {
@@ -62,16 +62,16 @@ int fittest(vector<int> &chromosome)
 int maxDegree()
 {
     int tmp = 0;
-    int maks = 0;
+    int maxx = 0;
     for (int i = 0; i < n; i++)
     {
         for (int j = 0; j < n; j++)
             if (adj[i][j] == 1)
                 tmp++;
-        maks = max(maks, tmp);
+        maxx = max(maxx, tmp);
         tmp = 0;
     }
-    return maks;
+    return maxx;
 }
 
 void generatePopulation(int maxDegree, vector<pair<vector<int>, int>> &res)
@@ -226,7 +226,6 @@ void mutateWithAnnealing(vector<int> &chromosome, int maxColor, int a, double te
 
     res[a] = newColor;
 }
-// New function: Acceptance Probability for Simulated Annealing
 double acceptanceProbability(int oldFitness, int newFitness, double temperature)
 {
     if (newFitness < oldFitness)
@@ -252,7 +251,6 @@ int geneticAlg(vector<pair<vector<int>, int>> &sample)
     while (t < 4000)
     {
         t++;
-        // colors = colorCount(population);
         for (auto &indv : population)
             indv.second = fittest(indv.first);
         sort(population.begin(), population.end(), comp);
@@ -262,15 +260,12 @@ int geneticAlg(vector<pair<vector<int>, int>> &sample)
             minimalizeColors(i.first, colors);
         colors = colorCount(population);
         sort(population.begin(), population.end(), comp);
-        // cout << t << ": " << colors << "(" << population[0].second << ")\n";
         if (population[0].second == 0)
         {
             if (colors < best)
                 best = colors;
             devaluate(population, best - 1);
             colors--;
-            // cout << "decresing the colors \n";
-            // colors = colorCount(population);
         }
     }
     if (population[0].second != 0)
@@ -286,11 +281,10 @@ int geneticAlg(vector<pair<vector<int>, int>> &sample)
                 int newFitness = fittest(individual.first);
                 if (oldFitness > newFitness)
                 {
-                    individual.second = newFitness; // Accept new solution
+                    individual.second = newFitness;
                     individual.first = std::move(temp);
                     if (individual.second == 0)
                     {
-                        // cout << "found a new best" << colorCount(individual.first) << '\n';
                         best = min(best, colorCount(individual.first));
                         break;
                     }
@@ -298,11 +292,10 @@ int geneticAlg(vector<pair<vector<int>, int>> &sample)
                 }
                 else if (acceptanceProbability(oldFitness, newFitness, temperature) > ((double)rand() / RAND_MAX))
                 {
-                    individual.second = newFitness; // Accept new solution
+                    individual.second = newFitness;
                     individual.first = std::move(temp);
                     if (individual.second == 0)
                     {
-                        // cout << "found a new best" << colorCount(individual.first) << '\n';
                         best = min(best, colorCount(individual.first));
                         break;
                     }
